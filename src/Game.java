@@ -5,16 +5,31 @@ import java.util.logging.Logger;
 
 public class Game extends BasicGame {
 
+    //We need to store our stuff:
+    //Like:
+    //public GameState gamestate;
+    //public int score;
+    //private Timer timer;
+    //...
+
     public Game(String gamename) {
         super(gamename);
     }
 
     @Override
     public void init(GameContainer gc) throws SlickException {
+        /*Create the instances of our classes here:
+        e.g.:
+        private WordBag wb = new WordBag(file);
+        private Timer timer = new Timer();
+         */
     }
 
     @Override
     public void update(GameContainer gc, int i) throws SlickException {
+        /*
+        This is the loop, here we check for user input and see if something happened
+         */
         Input input = gc.getInput();
         if (input.isKeyDown(Input.KEY_G)) {
 
