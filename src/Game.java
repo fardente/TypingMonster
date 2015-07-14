@@ -1,5 +1,6 @@
 import org.newdawn.slick.*;
 
+import java.awt.Font;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,13 +22,20 @@ public class Game extends BasicGame {
     private int wordRate = 1200; //how often new words drop in milliseconds
     private long wordTimer = 0;
     private long gameTimer = 0;
+    private Color timerColor;
 
     public WordFactory wf;
     public Word word;
     private float velocity;
     private float speed;
     private String inputString = "";
+    TrueTypeFont wordFont;
+    TrueTypeFont inputFont;
+    TrueTypeFont scoreFont;
+    TrueTypeFont timerFont;
 
+    private Color wordColor = Color.darkGray;
+    private Color highlightColor = Color.blue;
 
     public Game(String gamename) {
         super(gamename);
@@ -40,9 +48,22 @@ public class Game extends BasicGame {
         private WordBag wb = new WordBag(file);
         private Timer timer = new Timer();
          */
+        timerColor = Color.gray;
+        Font font = new Font("Verdana", Font.PLAIN, 24);
+        wordFont = new TrueTypeFont(font, true);
+
+        font = new Font("Verdana", Font.BOLD, 32);
+        inputFont = new TrueTypeFont(font, true);
+
+        font = new Font("Verdana", Font.BOLD, 32);
+        scoreFont = new TrueTypeFont(font, true);
+
+        font = new Font("Verdana", Font.BOLD, 16);
+        timerFont = new TrueTypeFont(font, true);
+
         wf = new WordFactory(4,WIDTH, HEIGHT);
         this.velocity = 1;
-        this.speed = 0.7f;
+        this.speed = 1.7f;
     }
 
     @Override
@@ -88,16 +109,18 @@ public class Game extends BasicGame {
         for (Word word : wf.getCurrentWords()){
             String input = "a";
             if (word.getWord().startsWith(input)){
-                highlightString(word, input, g);
+                highlightString(word, input, wordFont);
             }
             else {
-                g.drawString(word.getWord(), word.getX(), word.getY());
+                //g.drawString(word.getWord(), word.getX(), word.getY());
+                wordFont.drawString(word.getX(), word.getY(), word.getWord(), wordColor);
             }
         }
-        g.setColor(Color.black);
-        g.drawString("x            Seems to work!", 240, 200);
-        g.drawString("Time : " + (playTime - gameTimer/1000), WIDTH-100, HEIGHT/10);
-        g.drawString(inputString, 300, HEIGHT-100);
+        if(playTime - gameTimer/1000 < 10){
+            timerColor = Color.red;
+        }
+        timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (playTime - gameTimer/1000), timerColor);
+        g.drawString(inputString, 300, HEIGHT - 100);
     }
 
     public static void main(String[] args) {
@@ -113,16 +136,12 @@ public class Game extends BasicGame {
 
     }
 
-    private static void highlightString(Word word, String input, Graphics g){
-        String highlighted = input;
+    private void highlightString(Word word, String input, TrueTypeFont font){
         String notHigh = word.getWord().substring(input.length());
         for (int i = 0; i<input.length(); i++){
-            notHigh = " " + notHigh;
+            notHigh = "_" + notHigh;
         }
-        g.drawString(notHigh, word.getX(), word.getY());
-        g.setColor(Color.red);
-        g.drawString(input, word.getX(), word.getY());
-        g.setColor(Color.black);
-
+        font.drawString(word.getX(), word.getY(), notHigh, wordColor);
+        font.drawString(word.getX(), word.getY(), input, highlightColor);
     }
 }

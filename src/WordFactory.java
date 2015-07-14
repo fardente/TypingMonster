@@ -5,7 +5,7 @@ import java.util.Stack;
 
 public class WordFactory {
 
-    private final int XOFFSET = 50;
+    private final int XOFFSET = 200;
     private int wordLength;
     private int maxWidth, maxHeight;
     private Stack<Word> wordStorage;
