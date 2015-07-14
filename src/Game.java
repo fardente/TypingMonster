@@ -37,6 +37,18 @@ public class Game extends BasicGame {
     private Color wordColor = Color.darkGray;
     private Color highlightColor = Color.blue;
 
+    //##############################
+    //## Sound
+    Sound type;
+    Sound backspace;
+    Sound enter;
+    Sound alarm;
+    Sound correct;
+    Sound incorrect;
+    Sound music;
+
+    private boolean lastTenSeconds = false;
+
     public Game(String gamename) {
         super(gamename);
     }
@@ -48,6 +60,8 @@ public class Game extends BasicGame {
         private WordBag wb = new WordBag(file);
         private Timer timer = new Timer();
          */
+
+        //FONTS
         timerColor = Color.gray;
         Font font = new Font("Verdana", Font.PLAIN, 24);
         wordFont = new TrueTypeFont(font, true);
@@ -60,6 +74,12 @@ public class Game extends BasicGame {
 
         font = new Font("Verdana", Font.BOLD, 16);
         timerFont = new TrueTypeFont(font, true);
+
+        //SOUND
+        type = new Sound("res/audio/typing.ogg");
+        backspace = new Sound("res/audio/typereverse.ogg");
+        alarm = new Sound("res/audio/alarm.ogg");
+        incorrect = new Sound("res/audio/incorrect.ogg");
 
         wf = new WordFactory(4,WIDTH, HEIGHT);
         this.velocity = 1;
@@ -75,6 +95,11 @@ public class Game extends BasicGame {
         if (gameTimer > playTime*1000){
             gc.exit();
         }
+
+        if(playTime - gameTimer/1000 < 10 && !lastTenSeconds){
+            lastTenSeconds = true;
+            alarm.play();
+        }
         this.wordTimer += passedTime;
         if (wordTimer > wordRate){
             wordTimer = 0;
@@ -85,16 +110,19 @@ public class Game extends BasicGame {
         if (input.isKeyPressed(Input.KEY_G)) {
 
             inputString += "g";
+            type.play();
             System.out.println(inputString);
         }
         if (input.isKeyPressed(Input.KEY_ENTER)) {
 
+            incorrect.play();
             System.out.println("Key G pressed");
 
         }
         if (input.isKeyPressed(Input.KEY_BACK)) {
 
             inputString = inputString.substring(0, inputString.length()-1);
+            backspace.play();
             System.out.println(inputString);
         }
         wf.moveWords(this.velocity, this.speed);
@@ -116,7 +144,7 @@ public class Game extends BasicGame {
                 wordFont.drawString(word.getX(), word.getY(), word.getWord(), wordColor);
             }
         }
-        if(playTime - gameTimer/1000 < 10){
+        if(lastTenSeconds){
             timerColor = Color.red;
         }
         timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (playTime - gameTimer/1000), timerColor);
