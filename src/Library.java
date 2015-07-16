@@ -12,7 +12,7 @@ public class Library {
      */
     private ArrayList<String> word=new ArrayList<String>();
     private String tosend[]=new String [20];
-    private int total=38313;
+    private int total=128985;
     private ArrayList<String> alreadysend=new ArrayList<String>();
     Library()
     {
@@ -95,13 +95,38 @@ public class Library {
             }
         }
     }
-
+//----------------------------------------------------------------------------------
+     public String[] get(int length,int numwords)
+    {
+        ArrayList<Integer> arr=new ArrayList<Integer>();
+        Random randomGenerator = new Random();
+        String []send=new String[numwords];       
+    for (int i = 0; i < numwords; ){
+      int randomInt = randomGenerator.nextInt(total);
+      if(!arr.contains(randomInt) && (word.get(randomInt).length()==length))
+      {
+          arr.add(randomInt);
+          send[i]=word.get(randomInt);
+          i++;
+      }
+    }
+    int a;
+    for (int j=0;j<20;j++)
+    {
+        alreadysend.add(word.get(j));
+        a=arr.get(j);
+        word.remove(a);
+    }
+    total=total-numwords;
+    return send;
+    }
     public static void main(String[] args) {
         // TODO code application logic here
          Library l=new Library();
-         String []a=new String[20];
-         a=l.get(4);
-         for(int i=0;i<20;i++)
+         String []a=new String[1000];
+         a=l.get(4,1000);
+         
+         for(int i=0;i<1000;i++)
          {
              System.out.println(a[i]);
          }
