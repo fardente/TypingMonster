@@ -23,6 +23,9 @@ public class Word {
         return this.y;
     }
 
+    public void setSolved(boolean solved) {
+        isSolved = solved;
+    }
     public boolean isSolved() {
         return isSolved;
     }
