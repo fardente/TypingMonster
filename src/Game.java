@@ -4,8 +4,12 @@ import org.newdawn.slick.Color;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Image;
 import org.newdawn.slick.geom.Rectangle;
+import org.newdawn.slick.particles.ConfigurableEmitter;
+import org.newdawn.slick.particles.ParticleIO;
+import org.newdawn.slick.particles.ParticleSystem;
 
 import java.awt.Font;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -20,7 +24,7 @@ public class Game extends BasicGame implements ManiacInputListener {
 
     //##############################
     //## GAME VARS
-    private boolean lastTenSeconds, pauseState;
+    private boolean lastSeconds, pauseState;
     private String input;
     public WordFactory wordFactory;
     private float velocity, speed;
@@ -47,6 +51,11 @@ public class Game extends BasicGame implements ManiacInputListener {
 
     TrueTypeFont wordFont, inputFont, scoreFont, timerFont;
 
+    private ParticleSystem particleSystem;
+    private String particleImgSrc = "res/img/particle.png";
+    private Image particleImage;
+    private String particleXML = "res/particles.xml";
+
     //##############################
     //## Sound
     private Sound type;
@@ -72,7 +81,7 @@ public class Game extends BasicGame implements ManiacInputListener {
     public void init(GameContainer gc) throws SlickException {
         //##############################
         //## GAME VARS
-        lastTenSeconds = false;
+        lastSeconds = false;
         pauseState = false;
         input = "";
         wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
@@ -88,7 +97,7 @@ public class Game extends BasicGame implements ManiacInputListener {
         //##############################
         //## GRAPHICS
         BG_IMAGE = new Image(BG_IMAGE_SRC);
-        BG_IMAGE.setAlpha(0.4f);
+        BG_IMAGE.setAlpha(0.8f);
         land = new Image("res/home.png");
         play = new Image("res/play.png");
         startImage = new Image("res/start.png");
@@ -97,13 +106,18 @@ public class Game extends BasicGame implements ManiacInputListener {
         scoreFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 16), true);
         timerFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 16), true);
 
+        //PARTICLES
+        particleImage = new Image(particleImgSrc);
+        particleSystem = new ParticleSystem(particleImage, 1000);
+        particleSystem.setBlendingMode(ParticleSystem.BLEND_ADDITIVE);
+
         //##############################
         //## Sound
         type = new Sound("res/audio/typing.ogg");
         backspace = new Sound("res/audio/typereverse.ogg");
         alarm = new Sound("res/audio/alarm.ogg");
         incorrect = new Sound("res/audio/incorrect.ogg");
-        correct = new Sound("res/audio/incorrect.ogg");
+        correct = new Sound("res/audio/correct.ogg");
 
         //##############################
         //## Score
@@ -128,7 +142,7 @@ public class Game extends BasicGame implements ManiacInputListener {
         }
 
 
-        if(pauseState == false && start ==1)
+        if(!pauseState && start ==1)
         {
             this.gameTimer += passedTime;
             if (gameTimer > PLAYTIME * 1000) {
@@ -148,11 +162,13 @@ public class Game extends BasicGame implements ManiacInputListener {
                     wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
                     input = "";
                     pauseState = false;
+                    TIMER_COLOR = Color.gray;
+                    lastSeconds = false;
                 }
             }
 
-            if (PLAYTIME - gameTimer / 1000 < 10 && !lastTenSeconds) {
-                lastTenSeconds = true;
+            if (PLAYTIME - gameTimer / 1000 < 5 && !lastSeconds) {
+                lastSeconds = true;
                 alarm.play();
             }
             this.wordTimer += passedTime;
@@ -161,6 +177,7 @@ public class Game extends BasicGame implements ManiacInputListener {
                 wordFactory.addWordToCurrent();
             }
             wordFactory.moveWords(velocity, speed);
+            particleSystem.update(passedTime);
         }
     }
 
@@ -179,6 +196,17 @@ public class Game extends BasicGame implements ManiacInputListener {
 
             //Draw (highlight) Current Words
             for (Word word : wordFactory.getCurrentWords()){
+                if (word.isSolved()){
+                    wordFactory.destroyWord(word);
+                    try {
+                        ConfigurableEmitter emitter = ParticleIO.loadEmitter(particleXML);
+                        emitter.setPosition(word.getX(),word.getY(), false);
+                        particleSystem.addEmitter(emitter);
+                    } catch (IOException e) {
+                        System.out.println("Particle XML-File could not be loaded!");
+                        e.printStackTrace();
+                    }
+                }
                 if (word.getWord().startsWith(input)){
                     highlightString(word, input, wordFont);
                 }
@@ -187,7 +215,7 @@ public class Game extends BasicGame implements ManiacInputListener {
                 }
             }
 
-            if(lastTenSeconds){
+            if(lastSeconds){
                 TIMER_COLOR = Color.red;
             }
 
@@ -199,6 +227,8 @@ public class Game extends BasicGame implements ManiacInputListener {
 
             //Draw the Score
             scoreFont.drawString(WIDTH-40, HEIGHT/10, "" + score.getPoints(), SCORE_COLOR);
+
+            particleSystem.render();
         }
     }
 
@@ -223,9 +253,13 @@ public class Game extends BasicGame implements ManiacInputListener {
     @Override
     public void RemoveRequest(String word){
         if(!pauseState){
-            if (wordFactory.destroyWord(word).equals(false))
+            if (wordFactory.matched(word)){
+                score.increasePoints(word.length());
+                correct.play();
+            }
+            else {
                 incorrect.play();
-            score.increasePoints(word.length());
+            }
             input = "";
         }
     }
