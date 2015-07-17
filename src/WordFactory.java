@@ -28,7 +28,6 @@ public class WordFactory {
         this.library = new Library();
         library.loadfile();
         readWords();
-        System.out.println(wordStorage.size());
     }
 
     public void setWordLength(int length){
