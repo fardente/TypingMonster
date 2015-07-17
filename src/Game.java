@@ -41,8 +41,9 @@ public class Game extends BasicGame implements ManiacInputListener {
 
     private Color TIMER_COLOR = Color.gray;
     private Color WORD_COLOR = Color.darkGray;
-    private Color HIGHLIGHT_COLOR = Color.blue;
+    private Color HIGHLIGHT_COLOR = Color.green;
     private Color INPUT_COLOR = Color.black;
+    private Color SCORE_COLOR = Color.blue;
 
     TrueTypeFont wordFont, inputFont, scoreFont, timerFont;
 
@@ -55,7 +56,6 @@ public class Game extends BasicGame implements ManiacInputListener {
     Sound correct;
     Sound incorrect;
     Sound music;
-
 
     //##############################
     //## Score
@@ -70,11 +70,6 @@ public class Game extends BasicGame implements ManiacInputListener {
 
     @Override
     public void init(GameContainer gc) throws SlickException {
-        /*Create the instances of our classes here:
-        e.g.:
-        private WordBag wb = new WordBag(file);
-        private Timer timer = new Timer();
-         */
         //##############################
         //## GAME VARS
         lastTenSeconds = false;
@@ -93,6 +88,7 @@ public class Game extends BasicGame implements ManiacInputListener {
         //##############################
         //## GRAPHICS
         BG_IMAGE = new Image(BG_IMAGE_SRC);
+        BG_IMAGE.setAlpha(0.4f);
         land = new Image("res/home.png");
         play = new Image("res/play.png");
         startImage = new Image("res/start.png");
@@ -176,6 +172,7 @@ public class Game extends BasicGame implements ManiacInputListener {
             g.drawImage(play,50,330);
         }
         else {
+            g.setBackground(Color.white);
             //Draw BG-Image
             BG_IMAGE.getScaledCopy(WIDTH, HEIGHT);
             BG_IMAGE.draw(0, 0);
@@ -201,7 +198,7 @@ public class Game extends BasicGame implements ManiacInputListener {
             inputFont.drawString(WIDTH/2-(inputFont.getWidth(input)/2), HEIGHT-70, input, INPUT_COLOR);
 
             //Draw the Score
-            scoreFont.drawString(WIDTH-40, HEIGHT/10, "" + score.getPoints());
+            scoreFont.drawString(WIDTH-40, HEIGHT/10, "" + score.getPoints(), SCORE_COLOR);
         }
     }
 
@@ -235,8 +232,10 @@ public class Game extends BasicGame implements ManiacInputListener {
 
     @Override
     public void CharRequest(String typedChars){
-        if(!pauseState)
+        if(!pauseState){
             input =  typedChars;
+            type.play();
+        }
     }
 
     public static void main(String[] args) {
