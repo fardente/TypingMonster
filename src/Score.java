@@ -181,12 +181,17 @@ public class Score {
         return data;
     }
 
+    /* Not used for now
     // Increase the current points, based on the game-level
     public void increasePoints(int level) {
         if (level > 0) {
             level -= 1;
             this.points += (int) ((double) this.startPoints / 100 * (100 + (this.increaseRatio * level)));
         }
+    }*/
+
+    public void increasePoints(int wordLength) {
+        this.points += wordLength;
     }
 
     // Increase the current points, based on the game-level

@@ -67,19 +67,15 @@ public class WordFactory {
         currentWords.remove(word);
     }
 
-    public void destroyWord(String word){
-        currentWords.remove(word);
-    }
-
-    public boolean matched(String input){
-        for (Word word : currentWords){
-            if(word.getWord().equals(input)){
-                word.setSolved(true);
-                return true;
-            }
+    public Boolean destroyWord(String word){
+        for (Word item : currentWords)
+        {
+            if (item.getWord().equals(word))
+                return currentWords.remove(item);
         }
         return false;
     }
+
 
     public void moveWords(float velocity, float speed){
 
