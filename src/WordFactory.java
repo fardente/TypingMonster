@@ -28,20 +28,21 @@ public class WordFactory {
         this.library = new Library();
         library.loadfile();
         readWords();
+        System.out.println(wordStorage.size());
     }
 
     public void setWordLength(int length){
-        this.wordLength = length;
+        wordLength = length;
     }
 
     public int getWordLength(){
-        return this.wordLength;
+        return wordLength;
     }
 
     private void readWords(){
         this.wordStorage.clear();
-        for(String wordString : library.get(this.wordLength, 30)){
-            this.wordStorage.push(createWord(wordString));
+        for(String wordString : library.get(wordLength, wordsPerLevel)){
+            wordStorage.push(createWord(wordString));
         }
     }
 

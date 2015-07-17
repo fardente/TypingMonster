@@ -17,16 +17,18 @@ public class Game extends BasicGame implements ManiacInputListener {
     //## GAME CONSTANTS
     private static String GAMETITLE = "Typing Maniac Clone";
     private static int PLAYTIME = 30; //Seconds to play
-    private int WORD_RATE = 1200; //how often new words drop in milliseconds
-    private long WORD_TIMER = 0;
-    private long GAME_TIMER = 0;
 
     //##############################
     //## GAME VARS
     private boolean lastTenSeconds, pauseState;
     private String input;
     public WordFactory wordFactory;
-    private float VELOCITY, SPEED;
+    private float velocity, speed;
+    private long wordTimer = 0; //Counts time up to wordRate
+    private long gameTimer = 0;
+    private int wordLength = 4; //Initial setting, will increase with Level, MUST NEVER BE BIGGER THAN 10!
+    private int numberOfWords = 30; //Initial setting, will increase with Level
+    private int wordRate = 1200; //how often new words drop in milliseconds
 
     //##############################
     //## GRAPHICS
@@ -46,13 +48,14 @@ public class Game extends BasicGame implements ManiacInputListener {
 
     //##############################
     //## Sound
-    Sound type;
+    private Sound type;
     Sound backspace;
     Sound enter;
     Sound alarm;
     Sound correct;
     Sound incorrect;
     Sound music;
+
 
     //##############################
     //## Score
@@ -72,15 +75,14 @@ public class Game extends BasicGame implements ManiacInputListener {
         private WordBag wb = new WordBag(file);
         private Timer timer = new Timer();
          */
-
         //##############################
         //## GAME VARS
         lastTenSeconds = false;
         pauseState = false;
         input = "";
-        wordFactory = new WordFactory(4, 30, WIDTH, HEIGHT);
-        VELOCITY = 1;
-        SPEED = 1.7f;
+        wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
+        velocity = 1;
+        speed = 1.7f;
 
         //##############################
         //## INPUT
@@ -125,29 +127,44 @@ public class Game extends BasicGame implements ManiacInputListener {
         {
             if(Mouse.isButtonDown(0)) {
                 start = 1;
-                GAME_TIMER = 0;
+                gameTimer = 0;
             }
         }
 
 
-        if(pauseState == false)
+        if(pauseState == false && start ==1)
         {
-
-            this.GAME_TIMER += passedTime;
-            if (GAME_TIMER > PLAYTIME * 1000) {
-                gc.exit();
+            this.gameTimer += passedTime;
+            if (gameTimer > PLAYTIME * 1000) {
+                if (wordLength > 9) {
+                    gc.exit();
+                }
+                else {
+                    pauseState = true;
+                    gameTimer = 0;
+                    wordLength++;
+                    numberOfWords += 2;
+                    speed += 0.1f;
+                    /*gc.reinit(); Would be nice, but is unfortunately broken when using sound.. it doesnt shut down the
+                        openAL audio process, which will complain if it is initialized more than once...
+                        So we have to reset everything ourselves:
+                    */
+                    wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
+                    input = "";
+                    pauseState = false;
+                }
             }
 
-            if (PLAYTIME - GAME_TIMER / 1000 < 10 && !lastTenSeconds) {
+            if (PLAYTIME - gameTimer / 1000 < 10 && !lastTenSeconds) {
                 lastTenSeconds = true;
                 alarm.play();
             }
-            this.WORD_TIMER += passedTime;
-            if (WORD_TIMER > WORD_RATE) {
-                WORD_TIMER = 0;
+            this.wordTimer += passedTime;
+            if (wordTimer > wordRate) {
+                wordTimer = 0;
                 wordFactory.addWordToCurrent();
             }
-            wordFactory.moveWords(this.VELOCITY, this.SPEED);
+            wordFactory.moveWords(velocity, speed);
         }
     }
 
@@ -178,7 +195,7 @@ public class Game extends BasicGame implements ManiacInputListener {
             }
 
             //Draw the timer
-            timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (PLAYTIME - GAME_TIMER /1000), TIMER_COLOR);
+            timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (PLAYTIME - gameTimer /1000), TIMER_COLOR);
 
             //Draw input
             inputFont.drawString(WIDTH/2-(inputFont.getWidth(input)/2), HEIGHT-70, input, INPUT_COLOR);
