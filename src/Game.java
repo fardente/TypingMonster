@@ -4,7 +4,6 @@ import org.newdawn.slick.Color;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Image;
 import org.newdawn.slick.geom.Rectangle;
-import org.newdawn.slick.util.Log;
 
 import java.awt.Font;
 import java.util.logging.Level;
@@ -14,40 +13,36 @@ import java.util.logging.Logger;
 
 public class Game extends BasicGame implements ManiacInputListener {
 
-    //We need to store our stuff:
-    //Like:
-    //public GameState gamestate;
-    //public int score;
-    //private Timer timer;
-    //...
+    //##############################
+    //## GAME CONSTANTS
+    private static String GAMETITLE = "Typing Maniac Clone";
+    private static int PLAYTIME = 30; //Seconds to play
+    private int WORD_RATE = 1200; //how often new words drop in milliseconds
+    private long WORD_TIMER = 0;
+    private long GAME_TIMER = 0;
 
-    //TODO Dont use new word instances all the time, just create 20 words and change their string to the
-    //new word and the position back to the top
+    //##############################
+    //## GAME VARS
+    private boolean lastTenSeconds, pauseState;
+    private String input;
+    public WordFactory wordFactory;
+    private float VELOCITY, SPEED;
+
+    //##############################
+    //## GRAPHICS
     private static int HEIGHT = 480;
     private static int WIDTH = 640;
-    private static int frameRate = 60;
-    private static String gameTitle = "Typing Maniac Clone";
-    private static int playTime = 30; //Seconds to play
-    private static String BGIMAGE = "res/img/bg.jpg"; //Background image location
-    private Image bgImg;
+    private static int FRAMERATE = 60;
 
-    private int wordRate = 1200; //how often new words drop in milliseconds
-    private long wordTimer = 0;
-    private long gameTimer = 0;
-    private Color timerColor;
+    private static String BG_IMAGE_SRC = "res/img/bg.jpg"; //Background image location
+    private Image BG_IMAGE, land, play, startImage;
 
-    public WordFactory wf;
-    public Word word;
-    private float velocity;
-    private float speed;
-    TrueTypeFont wordFont;
-    TrueTypeFont inputFont;
-    TrueTypeFont scoreFont;
-    TrueTypeFont timerFont;
+    private Color TIMER_COLOR = Color.gray;
+    private Color WORD_COLOR = Color.darkGray;
+    private Color HIGHLIGHT_COLOR = Color.blue;
+    private Color INPUT_COLOR = Color.black;
 
-    private Color wordColor = Color.darkGray;
-    private Color highlightColor = Color.blue;
-    private Color inputColor = Color.black;
+    TrueTypeFont wordFont, inputFont, scoreFont, timerFont;
 
     //##############################
     //## Sound
@@ -64,15 +59,7 @@ public class Game extends BasicGame implements ManiacInputListener {
     private Score score;
     private int start = 0;
 
-    Image land;
-    Image play;
-    Image startImage;
-
     Rectangle rect;
-
-    private boolean lastTenSeconds = false;
-    private boolean pauseState;
-    private String input;
 
     public Game(String gamename) {
         super(gamename);
@@ -86,55 +73,47 @@ public class Game extends BasicGame implements ManiacInputListener {
         private Timer timer = new Timer();
          */
 
-        //GAMESTATE
-        input = "";
+        //##############################
+        //## GAME VARS
+        lastTenSeconds = false;
         pauseState = false;
-        wf = new WordFactory(4, 30, WIDTH, HEIGHT);
-        this.velocity = 1;
-        this.speed = 1.7f;
+        input = "";
+        wordFactory = new WordFactory(4, 30, WIDTH, HEIGHT);
+        VELOCITY = 1;
+        SPEED = 1.7f;
 
-        //INPUT
-        rect = new Rectangle(WIDTH/2-WIDTH/10, HEIGHT-70, 20,60);
+        //##############################
+        //## INPUT
         ManiacInput maniacInput = new ManiacInput();
         maniacInput.addListener(this);
         gc.getInput().addKeyListener(maniacInput);
 
-        //IMAGES
-        bgImg = new Image(BGIMAGE);
-        land=new Image("res/home.png");
-        play=new Image("res/play.png");
-        startImage=new Image("res/start.png");
+        //##############################
+        //## GRAPHICS
+        BG_IMAGE = new Image(BG_IMAGE_SRC);
+        land = new Image("res/home.png");
+        play = new Image("res/play.png");
+        startImage = new Image("res/start.png");
+        wordFont = new TrueTypeFont(new Font("Verdana", Font.PLAIN, 24), true);
+        inputFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 32), true);
+        scoreFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 16), true);
+        timerFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 16), true);
 
-        //FONTS
-        timerColor = Color.gray;
-        Font font = new Font("Verdana", Font.PLAIN, 24);
-        wordFont = new TrueTypeFont(font, true);
-
-        font = new Font("Verdana", Font.BOLD, 32);
-        inputFont = new TrueTypeFont(font, true);
-
-        font = new Font("Verdana", Font.BOLD, 16);
-        scoreFont = new TrueTypeFont(font, true);
-
-        font = new Font("Verdana", Font.BOLD, 16);
-        timerFont = new TrueTypeFont(font, true);
-
-        //SOUND
+        //##############################
+        //## Sound
         type = new Sound("res/audio/typing.ogg");
         backspace = new Sound("res/audio/typereverse.ogg");
         alarm = new Sound("res/audio/alarm.ogg");
         incorrect = new Sound("res/audio/incorrect.ogg");
         correct = new Sound("res/audio/incorrect.ogg");
 
-        //SCORE
+        //##############################
+        //## Score
         score = new Score();
     }
 
     @Override
     public void update(GameContainer gc, int passedTime) throws SlickException {
-        /*
-        This is the loop, here we check for user input and see if something happened
-         */
 
         int mx= Mouse.getX();
         int my=Mouse.getY();
@@ -146,7 +125,7 @@ public class Game extends BasicGame implements ManiacInputListener {
         {
             if(Mouse.isButtonDown(0)) {
                 start = 1;
-                gameTimer = 0;
+                GAME_TIMER = 0;
             }
         }
 
@@ -154,21 +133,21 @@ public class Game extends BasicGame implements ManiacInputListener {
         if(pauseState == false)
         {
 
-            this.gameTimer += passedTime;
-            if (gameTimer > playTime * 1000) {
+            this.GAME_TIMER += passedTime;
+            if (GAME_TIMER > PLAYTIME * 1000) {
                 gc.exit();
             }
 
-            if (playTime - gameTimer / 1000 < 10 && !lastTenSeconds) {
+            if (PLAYTIME - GAME_TIMER / 1000 < 10 && !lastTenSeconds) {
                 lastTenSeconds = true;
                 alarm.play();
             }
-            this.wordTimer += passedTime;
-            if (wordTimer > wordRate) {
-                wordTimer = 0;
-                wf.addWordToCurrent();
+            this.WORD_TIMER += passedTime;
+            if (WORD_TIMER > WORD_RATE) {
+                WORD_TIMER = 0;
+                wordFactory.addWordToCurrent();
             }
-            wf.moveWords(this.velocity, this.speed);
+            wordFactory.moveWords(this.VELOCITY, this.SPEED);
         }
     }
 
@@ -181,52 +160,32 @@ public class Game extends BasicGame implements ManiacInputListener {
         }
         else {
             //Draw BG-Image
-            bgImg.getScaledCopy(WIDTH, HEIGHT);
-            bgImg.draw(0, 0);
+            BG_IMAGE.getScaledCopy(WIDTH, HEIGHT);
+            BG_IMAGE.draw(0, 0);
 
             //Draw (highlight) Current Words
-            for (Word word : wf.getCurrentWords()){
+            for (Word word : wordFactory.getCurrentWords()){
                 if (word.getWord().startsWith(input)){
                     highlightString(word, input, wordFont);
                 }
                 else {
-                    wordFont.drawString(word.getX(), word.getY(), word.getWord(), wordColor);
+                    wordFont.drawString(word.getX(), word.getY(), word.getWord(), WORD_COLOR);
                 }
             }
 
             if(lastTenSeconds){
-                timerColor = Color.red;
+                TIMER_COLOR = Color.red;
             }
 
             //Draw the timer
-            timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (playTime - gameTimer/1000), timerColor);
-
-
-
-            //Draw Inputbox according to input length
-            rect.setWidth(inputFont.getWidth(input));
-            g.draw(rect);
+            timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (PLAYTIME - GAME_TIMER /1000), TIMER_COLOR);
 
             //Draw input
-            inputFont.drawString(WIDTH/2-WIDTH/10, HEIGHT-70, input, inputColor);
+            inputFont.drawString(WIDTH/2-(inputFont.getWidth(input)/2), HEIGHT-70, input, INPUT_COLOR);
 
             //Draw the Score
             scoreFont.drawString(WIDTH-40, HEIGHT/10, "" + score.getPoints());
         }
-    }
-
-    public static void main(String[] args) {
-        try {
-            AppGameContainer appgc;
-            appgc = new AppGameContainer(new Game(gameTitle));
-            appgc.setDisplayMode(WIDTH, HEIGHT, false);
-            appgc.setTargetFrameRate(frameRate);
-            appgc.setShowFPS(false);
-            appgc.start();
-        } catch (SlickException ex) {
-            Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
-        }
-
     }
 
     private void highlightString(Word word, String input, TrueTypeFont font){
@@ -234,39 +193,46 @@ public class Game extends BasicGame implements ManiacInputListener {
         for (int i = 0; i<input.length(); i++){
             notHigh = "_" + notHigh;
         }
-        font.drawString(word.getX(), word.getY(), notHigh, wordColor);
-        font.drawString(word.getX(), word.getY(), input, highlightColor);
+        font.drawString(word.getX(), word.getY(), notHigh, WORD_COLOR);
+        font.drawString(word.getX(), word.getY(), input, HIGHLIGHT_COLOR);
     }
 
     @Override
     public void PauseRequest()
     {
-        if(pauseState == false)
+        if(!pauseState)
             pauseState = true;
         else
             pauseState = false;
     }
 
     @Override
-    public void RemoveRequest(String word)
-    {
-        if(pauseState == false)
-        {
-            if (wf.destroyWord(word).equals(false))
+    public void RemoveRequest(String word){
+        if(!pauseState){
+            if (wordFactory.destroyWord(word).equals(false))
                 incorrect.play();
             score.increasePoints(word.length());
             input = "";
         }
-
     }
 
     @Override
-    public void CharRequest(String typedChars)
-    {
-        if(pauseState == false)
-        {
+    public void CharRequest(String typedChars){
+        if(!pauseState)
             input =  typedChars;
-            Log.info("Char");
+    }
+
+    public static void main(String[] args) {
+        try {
+            AppGameContainer appgc;
+            appgc = new AppGameContainer(new Game(GAMETITLE));
+            appgc.setDisplayMode(WIDTH, HEIGHT, false);
+            appgc.setTargetFrameRate(FRAMERATE);
+            appgc.setShowFPS(false);
+            appgc.start();
+        } catch (SlickException ex) {
+            Logger.getLogger(Game.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
 }
