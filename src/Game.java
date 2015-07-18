@@ -272,8 +272,11 @@ public class Game extends BasicGame implements ManiacInputListener {
     {
         if(!pauseState)
             pauseState = true;
-        else
+        else{
             pauseState = false;
+            input = "";
+            maniacInput.clearInput();
+        }
     }
 
     @Override
