@@ -19,7 +19,11 @@ public class ManiacInput implements KeyListener{
 	{
 		_listeners.add(listener);
 	}
-	
+
+	public void clearInput()
+	{
+		_combinedTypedChars = "";
+	}
 	public void submitCharacters()
 	{	
 		for (ManiacInputListener maniacInputListener : _listeners) 

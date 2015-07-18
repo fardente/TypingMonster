@@ -3,7 +3,6 @@ import org.newdawn.slick.*;
 import org.newdawn.slick.Color;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Image;
-import org.newdawn.slick.geom.Rectangle;
 import org.newdawn.slick.particles.ConfigurableEmitter;
 import org.newdawn.slick.particles.ParticleIO;
 import org.newdawn.slick.particles.ParticleSystem;
@@ -21,26 +20,29 @@ public class Game extends BasicGame implements ManiacInputListener {
     //## GAME CONSTANTS
     private static String GAMETITLE = "Typing Maniac Clone";
     private static int PLAYTIME = 30; //Seconds to play
+    private static int COUNTDOWN_TIME = 3;
+    private static boolean FULLSCREEN = false;
 
     //##############################
     //## GAME VARS
-    private boolean lastSeconds, pauseState;
+    private boolean lastSeconds, pauseState, countingDown;
     private String input;
     public WordFactory wordFactory;
     private float velocity, speed;
     private long wordTimer = 0; //Counts time up to wordRate
     private long gameTimer = 0;
+    private long countdown = 0;
     private int wordLength = 4; //Initial setting, will increase with Level, MUST NEVER BE BIGGER THAN 10!
-    private int numberOfWords = 30; //Initial setting, will increase with Level
-    private int wordRate = 1200; //how often new words drop in milliseconds
+    private int numberOfWords = 40; //Initial setting, will increase with Level
+    private int wordRate = 1000; //how often new words drop in milliseconds
 
     //##############################
     //## GRAPHICS
-    private static int HEIGHT = 480;
-    private static int WIDTH = 640;
+    private static int HEIGHT = 600;
+    private static int WIDTH = 800;
     private static int FRAMERATE = 60;
 
-    private static String BG_IMAGE_SRC = "res/img/bg.jpg"; //Background image location
+    private static String BG_IMAGE_SRC = "res/img/bg.png"; //Background image location
     private Image BG_IMAGE, land, play, startImage;
 
     private Color TIMER_COLOR = Color.gray;
@@ -48,8 +50,9 @@ public class Game extends BasicGame implements ManiacInputListener {
     private Color HIGHLIGHT_COLOR = Color.green;
     private Color INPUT_COLOR = Color.black;
     private Color SCORE_COLOR = Color.blue;
+    private Color COUNTDOWM_COLOR = Color.orange;
 
-    TrueTypeFont wordFont, inputFont, scoreFont, timerFont;
+    TrueTypeFont wordFont, inputFont, scoreFont, timerFont, countdownFont;
 
     private ParticleSystem particleSystem;
     private String particleImgSrc = "res/img/particle.png";
@@ -71,7 +74,7 @@ public class Game extends BasicGame implements ManiacInputListener {
     private Score score;
     private int start = 0;
 
-    Rectangle rect;
+    ManiacInput maniacInput;
 
     public Game(String gamename) {
         super(gamename);
@@ -83,28 +86,30 @@ public class Game extends BasicGame implements ManiacInputListener {
         //## GAME VARS
         lastSeconds = false;
         pauseState = false;
+        countingDown = false;
         input = "";
         wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
         velocity = 1;
-        speed = 1.7f;
+        speed = 1.3f;
 
         //##############################
         //## INPUT
-        ManiacInput maniacInput = new ManiacInput();
+        maniacInput = new ManiacInput();
         maniacInput.addListener(this);
         gc.getInput().addKeyListener(maniacInput);
 
         //##############################
         //## GRAPHICS
         BG_IMAGE = new Image(BG_IMAGE_SRC);
-        BG_IMAGE.setAlpha(0.8f);
+        BG_IMAGE.setAlpha(0.6f);
         land = new Image("res/home.png");
         play = new Image("res/play.png");
         startImage = new Image("res/start.png");
         wordFont = new TrueTypeFont(new Font("Verdana", Font.PLAIN, 24), true);
         inputFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 32), true);
-        scoreFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 16), true);
-        timerFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 16), true);
+        scoreFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 18), true);
+        timerFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 18), true);
+        countdownFont = new TrueTypeFont(new Font("Verdana", Font.BOLD, 48), true);
 
         //PARTICLES
         particleImage = new Image(particleImgSrc);
@@ -142,43 +147,55 @@ public class Game extends BasicGame implements ManiacInputListener {
         }
 
 
-        if(!pauseState && start ==1)
-        {
-            this.gameTimer += passedTime;
-            if (gameTimer > PLAYTIME * 1000) {
-                if (wordLength > 9) {
-                    gc.exit();
-                }
-                else {
-                    pauseState = true;
-                    gameTimer = 0;
-                    wordLength++;
-                    numberOfWords += 2;
-                    speed += 0.1f;
+        if(!pauseState && start ==1) {
+            if (!countingDown) {
+                this.gameTimer += passedTime;
+                if (gameTimer > PLAYTIME * 1000) {
+                    if (wordLength > 9) {
+                        gc.exit();
+                    } else {
+                        countingDown = true;
+                        input = "";
+                        gc.getInput().pause();
+                        gameTimer = 0;
+                        wordLength++;
+                        numberOfWords += 5;
+                        wordRate -= 30;
+                        speed += 0.03f;
                     /*gc.reinit(); Would be nice, but is unfortunately broken when using sound.. it doesnt shut down the
                         openAL audio process, which will complain if it is initialized more than once...
                         So we have to reset everything ourselves:
                     */
-                    wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
+                        wordFactory = new WordFactory(wordLength, numberOfWords, WIDTH, HEIGHT);
+                        TIMER_COLOR = Color.gray;
+                        lastSeconds = false;
+                    }
+                }
+
+                if (PLAYTIME - gameTimer / 1000 < 5 && !lastSeconds) {
+                    lastSeconds = true;
+                    alarm.play();
+                }
+                this.wordTimer += passedTime;
+                if (wordTimer > wordRate) {
+                    wordTimer = 0;
+                    wordFactory.addWordToCurrent();
+                }
+                wordFactory.moveWords(velocity, speed);
+
+            }
+            else {
+                countdown += passedTime;
+                if (countdown > COUNTDOWN_TIME * 1000) {
+                    countingDown = false;
+                    countdown = 0;
+                    gc.getInput().resume();
                     input = "";
-                    pauseState = false;
-                    TIMER_COLOR = Color.gray;
-                    lastSeconds = false;
+                    maniacInput.clearInput();
                 }
             }
-
-            if (PLAYTIME - gameTimer / 1000 < 5 && !lastSeconds) {
-                lastSeconds = true;
-                alarm.play();
-            }
-            this.wordTimer += passedTime;
-            if (wordTimer > wordRate) {
-                wordTimer = 0;
-                wordFactory.addWordToCurrent();
-            }
-            wordFactory.moveWords(velocity, speed);
-            particleSystem.update(passedTime);
         }
+        particleSystem.update(passedTime);
     }
 
     @Override
@@ -189,47 +206,56 @@ public class Game extends BasicGame implements ManiacInputListener {
             g.drawImage(play,50,330);
         }
         else {
-            g.setBackground(Color.white);
+            g.setBackground(Color.gray);
             //Draw BG-Image
             BG_IMAGE.getScaledCopy(WIDTH, HEIGHT);
             BG_IMAGE.draw(0, 0);
 
-            //Draw (highlight) Current Words
-            for (Word word : wordFactory.getCurrentWords()){
-                if (word.isSolved()){
-                    wordFactory.destroyWord(word);
-                    try {
-                        ConfigurableEmitter emitter = ParticleIO.loadEmitter(particleXML);
-                        emitter.setPosition(word.getX(),word.getY(), false);
-                        particleSystem.addEmitter(emitter);
-                    } catch (IOException e) {
-                        System.out.println("Particle XML-File could not be loaded!");
-                        e.printStackTrace();
+            if(!countingDown) {
+                //Draw (highlight) Current Words
+                for (Word word : wordFactory.getCurrentWords()) {
+                    if (word.isSolved()) {
+                        wordFactory.destroyWord(word);
+                        try {
+                            ConfigurableEmitter emitter = ParticleIO.loadEmitter(particleXML);
+                            emitter.setPosition(word.getX(), word.getY(), false);
+                            particleSystem.addEmitter(emitter);
+                        } catch (IOException e) {
+                            System.out.println("Particle XML-File could not be loaded!");
+                            e.printStackTrace();
+                        }
+                    }
+                    if (word.getWord().startsWith(input)) {
+                        highlightString(word, input, wordFont);
+                    } else {
+                        wordFont.drawString(word.getX(), word.getY(), word.getWord(), WORD_COLOR);
                     }
                 }
-                if (word.getWord().startsWith(input)){
-                    highlightString(word, input, wordFont);
+
+                if (lastSeconds) {
+                    TIMER_COLOR = Color.red;
                 }
-                else {
-                    wordFont.drawString(word.getX(), word.getY(), word.getWord(), WORD_COLOR);
+                //Draw the timer
+                timerFont.drawString(WIDTH-10-scoreFont.getWidth("9999"), HEIGHT/20, "" + (PLAYTIME - gameTimer /1000), TIMER_COLOR);
+
+                //Draw input
+                inputFont.drawString(WIDTH/2-(inputFont.getWidth(input)/2), HEIGHT-70, input, INPUT_COLOR);
+
+                //Draw the Score
+                scoreFont.drawString(WIDTH-10-scoreFont.getWidth("9999"), HEIGHT/10, "" + score.getPoints(), SCORE_COLOR);
+            }
+            else {
+                //Draw Countdown except for 0
+                if((COUNTDOWN_TIME - countdown /1000) > 0){
+                    countdownFont.drawString(WIDTH/2-(countdownFont.getWidth(""+COUNTDOWN_TIME)/2),
+                            HEIGHT/2-(countdownFont.getHeight(""+COUNTDOWN_TIME)), "" +
+                            (COUNTDOWN_TIME - countdown /1000), COUNTDOWM_COLOR);
                 }
             }
 
-            if(lastSeconds){
-                TIMER_COLOR = Color.red;
-            }
 
-            //Draw the timer
-            timerFont.drawString(WIDTH-40, HEIGHT/20, "" + (PLAYTIME - gameTimer /1000), TIMER_COLOR);
-
-            //Draw input
-            inputFont.drawString(WIDTH/2-(inputFont.getWidth(input)/2), HEIGHT-70, input, INPUT_COLOR);
-
-            //Draw the Score
-            scoreFont.drawString(WIDTH-40, HEIGHT/10, "" + score.getPoints(), SCORE_COLOR);
-
-            particleSystem.render();
         }
+        particleSystem.render();
     }
 
     private void highlightString(Word word, String input, TrueTypeFont font){
@@ -276,7 +302,7 @@ public class Game extends BasicGame implements ManiacInputListener {
         try {
             AppGameContainer appgc;
             appgc = new AppGameContainer(new Game(GAMETITLE));
-            appgc.setDisplayMode(WIDTH, HEIGHT, false);
+            appgc.setDisplayMode(WIDTH, HEIGHT, FULLSCREEN);
             appgc.setTargetFrameRate(FRAMERATE);
             appgc.setShowFPS(false);
             appgc.start();
